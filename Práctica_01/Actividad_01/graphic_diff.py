@@ -20,7 +20,7 @@ plt.plot(x, datos_omp[0], label="OpenMP")
 
 plt.xlabel('Tamaño de la matriz')
 plt.ylabel('Tiempo de ejecución')
-plt.title('Relación tamaño de la matriz y tiempo de ejecución con 2 threads')
+plt.title('Relación tamaño de la matriz y tiempo de ejecución con 16 threads')
 plt.legend()
 
 now = datetime.datetime.now()

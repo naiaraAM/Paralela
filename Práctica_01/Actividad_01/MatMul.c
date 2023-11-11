@@ -39,8 +39,8 @@ int main (int argc, char ** argv)
 	B = (float *) malloc (dim * dim * sizeof (float));
 	C = (float *) malloc (dim * dim * sizeof (float));
 		
-	Init_Mat_Sup (dim, A);
-	Init_Mat_Inf (dim, B);
+	Init_Mat_Inf (dim, A);
+	Init_Mat_Sup (dim, B);
 
 	clock_t start = clock();
 

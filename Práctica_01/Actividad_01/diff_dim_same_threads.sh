@@ -26,7 +26,7 @@ do
     esac
     while [ $matrix_size -le 1500 ]  # Use the correct comparison operators
     do
-        output=$(./a.out $matrix_size 1 2)
+        output=$(./a.out $matrix_size 1 16)
         duration=$(echo "$output" | grep "Duration" | awk '{print $2}')
         echo "Duration: $duration"
         # Guarda el resultado en el archivo de salida

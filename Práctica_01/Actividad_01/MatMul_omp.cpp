@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <chrono>
+#include <omp.h>
 
 #define RAND rand() % 100
 
@@ -9,7 +10,7 @@
 void Init_Mat_Sup (int dim, float *M);
 void Init_Mat_Inf (int dim, float *M);
 void Escribir_Matriz (float *M, int dim);
-void Multiplicar_Matrices (float *A, float *B, float *C, int dim, int num_threads);
+void Multiplicar_Matrices (float *A, float *B, float *C, int dim);
 
 
 int main (int argc, char ** argv)
@@ -17,31 +18,28 @@ int main (int argc, char ** argv)
 
     int block_size = 1;
     int dim = 1300;
-	int num_threads = 2;
     float *A, *B, *C;
 
-	if (argc == 4)
+	if (argc == 4) // beacuse of script, code reutilization
 	{
 		dim = atoi (argv[1]);
 		block_size = atoi (argv[2]);
-		num_threads = atoi (argv[3]);
 	}
 
     A = (float *) malloc (dim * dim * sizeof(float));
     B = (float *) malloc (dim * dim * sizeof(float));
     C = (float *) malloc (dim * dim * sizeof(float));
 
-    Init_Mat_Sup (dim, A);
-    Init_Mat_Inf (dim, B);
+    Init_Mat_Inf (dim, A);
+    Init_Mat_Sup (dim, B);
 
-    auto start = std::chrono::high_resolution_clock::now();
+    double start = omp_get_wtime();
 
-    Multiplicar_Matrices(A, B, C, dim, num_threads);
+    Multiplicar_Matrices(A, B, C, dim);
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = end - start;
+    double end = omp_get_wtime();
 
-    std::cout << "[Duration] " << duration.count() << " seconds" << std::endl;
+	printf("[Duration] %lf seconds\n", end - start);
 
 	free(A);
 	free(B);
@@ -92,23 +90,26 @@ void Escribir_Matriz (float *M, int dim)
    printf ("\n");
 }
 
-void Multiplicar_Matrices (float *A, float *B, float *C, int dim, int num_threads)
+void Multiplicar_Matrices (float *A, float *B, float *C, int dim)
 {
 	int i, j, k;
 
-    #pragma omp parallel private (i, j, k) shared (A, B, C, dim) num_threads(num_threads)
+	int max_threads = omp_get_max_threads();
+	printf("Max threads: %d\n", max_threads);
+
+    #pragma omp parallel private (i, j, k) shared (A, B, C, dim) num_threads(max_threads)
 	{
 		// part without data
-		#pragma omp for
+		#pragma omp for collapse(2)
 		for (i=0; i < dim; i++)
 			for (j=0; j < dim; j++)
 				C[i*dim+j] = 0.0;
 
 		// part with data
-		#pragma omp for
+		#pragma omp for collapse(3)
 		for (i=0; i < dim; i++)
 			for (j=0; j < dim; j++)
 				for (k=0; k < dim; k++)
 					C[i*dim+j] += A[i*dim+k] * B[j+k*dim];
-	}
-} 
+	}	
+}
