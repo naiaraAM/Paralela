@@ -1,29 +1,30 @@
 #include <thread>
 #include <stdlib.h>
 #include <iostream>
-#include <time.h>
+#include <chrono>
 
 #define RAND rand() % 100
-#define NUM_THREADS 2
 
 // Function definition
 void Init_Mat_Sup (int dim, float *M);
 void Init_Mat_Inf (int dim, float *M);
 void Escribir_Matriz (float *M, int dim);
-void Multiplicar_Matrices (float *A, float *B, float *C, int dim);
+void Multiplicar_Matrices (float *A, float *B, float *C, int dim, int num_threads);
 
 
 int main (int argc, char ** argv)
 {
 
     int block_size = 1;
-    int dim = 200;
+    int dim = 1300;
+	int num_threads = 2;
     float *A, *B, *C;
 
-	if (argc == 3)
+	if (argc == 4)
 	{
 		dim = atoi (argv[1]);
 		block_size = atoi (argv[2]);
+		num_threads = atoi (argv[3]);
 	}
 
     A = (float *) malloc (dim * dim * sizeof(float));
@@ -32,20 +33,15 @@ int main (int argc, char ** argv)
 
     Init_Mat_Sup (dim, A);
     Init_Mat_Inf (dim, B);
-    //std::cout << "Matriz A\n";
-    //Escribir_Matriz(A, dim);
-    //std::cout << "Matriz B\n";
-    //Escribir_Matriz(B, dim);
 
-    clock_t start = clock();
+    auto start = std::chrono::high_resolution_clock::now();
 
-    Multiplicar_Matrices(A, B, C, dim);
+    Multiplicar_Matrices(A, B, C, dim, num_threads);
 
-    clock_t end = clock() - start;
-	double duration = ((double) end) / CLOCKS_PER_SEC;
-    //Escribir_Matriz(C, dim);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
 
-    printf("[Duration] %f\n", duration);
+    std::cout << "[Duration] " << duration.count() << " seconds" << std::endl;
 
 	free(A);
 	free(B);
@@ -63,7 +59,6 @@ void Init_Mat_Sup (int dim, float *M)
 			if (j <= i)
 				M[i*dim+j] = 0.0;
 			else
-//				M[i*dim+j] = j+1;
 				M[i*dim+j] = RAND;
 		}
     }
@@ -78,7 +73,6 @@ void Init_Mat_Inf (int dim, float *M)
 			if (j >= i)
 				M[i*dim+j] = 0.0;
 			else
-//				M[i*dim+j] = j+1;
 				M[i*dim+j] = RAND;
 		}
 	}
@@ -98,21 +92,23 @@ void Escribir_Matriz (float *M, int dim)
    printf ("\n");
 }
 
-void Multiplicar_Matrices (float *A, float *B, float *C, int dim)
+void Multiplicar_Matrices (float *A, float *B, float *C, int dim, int num_threads)
 {
 	int i, j, k;
 
-    #pragma omp parallel private (i, j, k) shared (A, B, C, dim)
-	// part without data
-    #pragma omp for
-	for (i=0; i < dim; i++)
-		for (j=0; j < dim; j++)
-			C[i*dim+j] = 0.0;
+    #pragma omp parallel private (i, j, k) shared (A, B, C, dim) num_threads(num_threads)
+	{
+		// part without data
+		#pragma omp for
+		for (i=0; i < dim; i++)
+			for (j=0; j < dim; j++)
+				C[i*dim+j] = 0.0;
 
-	// part with data
-    #pragma omp for
-	for (i=0; i < dim; i++)
-		for (j=0; j < dim; j++)
-			for (k=0; k < dim; k++)
-				C[i*dim+j] += A[i*dim+k] * B[j+k*dim];
+		// part with data
+		#pragma omp for
+		for (i=0; i < dim; i++)
+			for (j=0; j < dim; j++)
+				for (k=0; k < dim; k++)
+					C[i*dim+j] += A[i*dim+k] * B[j+k*dim];
+	}
 } 

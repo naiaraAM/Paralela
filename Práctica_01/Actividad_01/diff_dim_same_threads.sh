@@ -21,7 +21,6 @@ do
             g++ -std=c++11 -pthread ${program_names[i]}
         ;;
         1)
-            export OMP_NUM_THREADS=2
             g++ -std=c++11 -fopenmp ${program_names[i]}
         ;;
     esac
@@ -37,3 +36,6 @@ do
 done
 
 echo "Resultados guardados en $output_file"
+rm a.out
+
+python3 graphic_diff.py

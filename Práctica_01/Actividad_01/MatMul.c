@@ -24,7 +24,7 @@ float Calcula_Maximo(float *M, int dim);
 
 int main (int argc, char ** argv)
 {
-	int block_size = 1, dim=1100;
+	int block_size = 1, dim=1300;
 	float *A, *B, *C;
 
 /* Lectura de parámetros de entrada */
@@ -41,10 +41,6 @@ int main (int argc, char ** argv)
 		
 	Init_Mat_Sup (dim, A);
 	Init_Mat_Inf (dim, B);
-	//printf ("Matriz A\n");
-	//Escribir_Matriz (A, dim);
-	//printf ("Matriz B\n");
-	//Escribir_Matriz (B, dim);
 
 	clock_t start = clock();
 
@@ -53,32 +49,7 @@ int main (int argc, char ** argv)
 	clock_t end = clock() - start;
 	double duration = ((double) end / CLOCKS_PER_SEC);
 	
-	//printf ("Matriz Resultado correcto\n");
-	//Escribir_Matriz (C, dim);
 	printf("[Duration] %f\n", duration);
-/*
-  printf ("-------------------------------------------------\n");
-
-  Init_Mat_Inf (dim, A);
-  Init_Mat_Sup (dim, B);
-
-  printf ("Matriz A\n");
-  Escribir_Matriz (A, dim);
-  printf ("Matriz B\n");
-  Escribir_Matriz (B, dim);
-
-  Multiplicar_Matrices (A, B, C, dim);
-  printf ("Matriz Resultado correcto\n");
-  Escribir_Matriz (C, dim);
-
-  Multiplicar_Matrices_Inf (A, B, C, dim);
-  printf ("Matriz Resultado Inferior\n");
-  Escribir_Matriz (C, dim);
-
-  float max=Calcula_Maximo(C,dim);
-  printf("El máximo es %f\n", max);
-  */
-
 
  	free(A);
 	free(B);
@@ -95,7 +66,6 @@ void Init_Mat_Sup (int dim, float *M)
 			if (j <= i)
 				M[i*dim+j] = 0.0;
 			else
-//				M[i*dim+j] = j+1;
 				M[i*dim+j] = RAND;
 		}
 	}
@@ -110,7 +80,6 @@ void Init_Mat_Inf (int dim, float *M)
 			if (j >= i)
 				M[i*dim+j] = 0.0;
 			else
-//				M[i*dim+j] = j+1;
 				M[i*dim+j] = RAND;
 		}
 	}

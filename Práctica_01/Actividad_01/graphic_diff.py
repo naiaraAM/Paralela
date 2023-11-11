@@ -25,8 +25,3 @@ plt.legend()
 
 now = datetime.datetime.now()
 plt.savefig(f"{now.strftime('%Y-%m-%d_%H-%M-%S')}.png")
-
-
-plt.show()
-
-# guarda la grafica en un archivo png con la fecha y hora actual
