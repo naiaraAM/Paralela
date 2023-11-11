@@ -1,7 +1,7 @@
 #!/bin/bash
 
 num_programs=4
-program_names=("MatMul_threads_Mul.cpp" "MatMul_threads_Mul_Inf.cpp" "MatMul_omp_Mul.cpp" "MatMul_omp_Mul_Inf.cpp")
+program_names=("MatMul_threads.cpp" "MatMul_threads_Mul_Inf.cpp" "MatMul_omp.cpp" "MatMul_omp_Mul_Inf.cpp")
 matrix_size=200
 
 # Nombre del archivo donde se guardarán los resultados
@@ -21,13 +21,12 @@ do
             g++ -std=c++11 -pthread ${program_names[i]}
         ;;
         2 | 3)
-            export OMP_NUM_THREADS=2
             g++ -std=c++11 -fopenmp ${program_names[i]}
         ;;
     esac
     while [ $matrix_size -le 1500 ]  # Use the correct comparison operators
     do
-        output=$(./a.out $matrix_size 1 2)
+        output=$(./a.out $matrix_size 1 16)
         duration=$(echo "$output" | grep "Duration" | awk '{print $2}')
         echo "Duration: $duration"
         # Guarda el resultado en el archivo de salida
@@ -37,3 +36,6 @@ do
 done
 
 echo "Resultados guardados en $output_file"
+rm a.out
+
+python3 graphic_diff.py

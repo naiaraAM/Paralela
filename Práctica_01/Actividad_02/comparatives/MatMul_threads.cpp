@@ -1,10 +1,9 @@
 #include <thread>
 #include <stdlib.h>
 #include <iostream>
-#include <time.h>
+#include <chrono>
 
 #define RAND rand() % 100
-#define NUM_THREADS 2
 
 // Function definition
 void Init_Mat_Sup (int dim, float *M);
@@ -17,7 +16,7 @@ int main (int argc, char ** argv)
 {
 
     int block_size = 1;
-    int dim = 1100;
+    int dim = 1300;
     int num_threads = 2;
     float *A, *B, *C;
 
@@ -32,32 +31,25 @@ int main (int argc, char ** argv)
     B = (float *) malloc (dim * dim * sizeof(float));
     C = (float *) malloc (dim * dim * sizeof(float));
 
-    Init_Mat_Sup (dim, A);
-    Init_Mat_Inf (dim, B);
-    //std::cout << "Matriz A\n";
-    //Escribir_Matriz(A, dim);
-    //std::cout << "Matriz B\n";
-    //Escribir_Matriz(B, dim);
+    Init_Mat_Inf (dim, A);
+    Init_Mat_Sup (dim, B);
 
     int row_start[num_threads];
     int row_end[num_threads];
 
     int rows_per_thread = dim / num_threads;
-    //printf("Assigned rows per thread: %d\n", rows_per_thread);
     for (int i = 0; i < num_threads; i++)
     {
-        //printf("Thread %d\n", i);
         row_start[i] = i * rows_per_thread;
         row_end[i] = (i + 1) * rows_per_thread;
         if (i == (num_threads - 1)) // last thread
         {
             row_end[i] = dim; // last row
         }
-        //printf("Start is %d and end %d\n", row_start[i], row_end[i]);
     }
 
     std::thread threads[num_threads];
-    clock_t start = clock();
+    auto start = std::chrono::high_resolution_clock::now();
     for (auto i = 0; i < num_threads; i++)
     {
         threads[i] = std::thread(Multiplicar_Matrices, A, B, C, dim, row_start[i], row_end[i]);
@@ -66,11 +58,12 @@ int main (int argc, char ** argv)
     {
         threads[i].join();
     }
-    clock_t end = clock() - start;
-    double duration = (double) end / (double) CLOCKS_PER_SEC;
-    //Escribir_Matriz(C, dim);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
 
-    printf("[Duration] %f\n", duration);
+    std::cout << "[Duration] " << duration.count() << " seconds" << std::endl;
+
+    Escribir_Matriz(C, dim);
 
     free(A);
     free(B);
@@ -88,7 +81,6 @@ void Init_Mat_Sup (int dim, float *M)
 			if (j <= i)
 				M[i*dim+j] = 0.0;
 			else
-//				M[i*dim+j] = j+1;
 				M[i*dim+j] = RAND;
 		}
     }
@@ -103,7 +95,6 @@ void Init_Mat_Inf (int dim, float *M)
 			if (j >= i)
 				M[i*dim+j] = 0.0;
 			else
-//				M[i*dim+j] = j+1;
 				M[i*dim+j] = RAND;
 		}
 	}

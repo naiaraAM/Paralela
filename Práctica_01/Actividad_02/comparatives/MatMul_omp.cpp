@@ -1,26 +1,26 @@
 #include <thread>
 #include <stdlib.h>
 #include <iostream>
-#include <time.h>
+#include <chrono>
+#include <omp.h>
 
 #define RAND rand() % 100
-#define NUM_THREADS 2
 
 // Function definition
 void Init_Mat_Sup (int dim, float *M);
 void Init_Mat_Inf (int dim, float *M);
 void Escribir_Matriz (float *M, int dim);
 void Multiplicar_Matrices (float *A, float *B, float *C, int dim);
-void Multiplicar_Matrices_Inf(float *A, float *B, float *C, int dim);
+
 
 int main (int argc, char ** argv)
 {
 
     int block_size = 1;
-    int dim = 5;
+    int dim = 1300;
     float *A, *B, *C;
 
-	if (argc == 3 or argc == 4)
+	if (argc == 4) // beacuse of script, code reutilization
 	{
 		dim = atoi (argv[1]);
 		block_size = atoi (argv[2]);
@@ -31,17 +31,15 @@ int main (int argc, char ** argv)
     C = (float *) malloc (dim * dim * sizeof(float));
 
     Init_Mat_Inf (dim, A);
-    Init_Mat_Inf (dim, B);
+    Init_Mat_Sup (dim, B);
 
-    clock_t start = clock();
+    double start = omp_get_wtime();
 
-    Multiplicar_Matrices_Inf(A, B, C, dim);
+    Multiplicar_Matrices(A, B, C, dim);
 
-    clock_t end = clock() - start;
-	double duration = ((double) end) / CLOCKS_PER_SEC;
-    //Escribir_Matriz(C, dim);
+    double end = omp_get_wtime();
 
-    printf("[Duration] %f\n", duration);
+	printf("[Duration] %lf seconds\n", end - start);
 
 	free(A);
 	free(B);
@@ -59,7 +57,6 @@ void Init_Mat_Sup (int dim, float *M)
 			if (j <= i)
 				M[i*dim+j] = 0.0;
 			else
-//				M[i*dim+j] = j+1;
 				M[i*dim+j] = RAND;
 		}
     }
@@ -74,7 +71,6 @@ void Init_Mat_Inf (int dim, float *M)
 			if (j >= i)
 				M[i*dim+j] = 0.0;
 			else
-//				M[i*dim+j] = j+1;
 				M[i*dim+j] = RAND;
 		}
 	}
@@ -98,35 +94,22 @@ void Multiplicar_Matrices (float *A, float *B, float *C, int dim)
 {
 	int i, j, k;
 
-    #pragma omp parallel private (i, j, k) shared (A, B, C, dim)
-	// part without data
-    #pragma omp for
-	for (i = 0; i < dim; i++)
-		for (j = 0; j < dim; j++)
-			C[i * dim + j] = 0.0;
+	int max_threads = omp_get_max_threads();
+	printf("Max threads: %d\n", max_threads);
 
-	// part with data
-    #pragma omp for
-	for (i = 0; i < dim; i++)
-		for (j = 0; j < dim; j++)
-			for (k = 0; k < dim; k++)
-				C[i * dim + j] += A[i * dim + k] * B[j + k * dim];
-} 
+    #pragma omp parallel private (i, j, k) shared (A, B, C, dim) num_threads(max_threads)
+	{
+		// part without data
+		#pragma omp for collapse(2)
+		for (i=0; i < dim; i++)
+			for (j=0; j < dim; j++)
+				C[i*dim+j] = 0.0;
 
-void Multiplicar_Matrices_Inf (float *A, float *B, float *C, int dim)
-{
-	int i, j, k;
-
-	#pragma omp parallel private (i, j, k) shared (A, B, C, dim)
-	// part without data
-	#pragma omp for
-	for (i = 0; i < dim; i++)
-		for (j = 0; j < dim; j++)
-			C[i * dim + j] = 0.0;
-
-	#pragma omp for
-	for (i = 1; i < dim; i++)
-		for (j = 1; j < dim; j++)
-			for (k = 0; k < dim; k++)
-				C[i * dim + j] += A[i * dim + k] * B[j + k * dim];
+		// part with data
+		#pragma omp for collapse(3)
+		for (i=0; i < dim; i++)
+			for (j=0; j < dim; j++)
+				for (k=0; k < dim; k++)
+					C[i*dim+j] += A[i*dim+k] * B[j+k*dim];
+	}	
 }
