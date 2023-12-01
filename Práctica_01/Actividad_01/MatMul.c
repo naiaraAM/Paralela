@@ -24,6 +24,7 @@ float Calcula_Maximo(float *M, int dim);
 
 int main (int argc, char ** argv)
 {
+	clock_t start = clock();
 	int block_size = 1, dim=1300;
 	float *A, *B, *C;
 
@@ -42,14 +43,16 @@ int main (int argc, char ** argv)
 	Init_Mat_Inf (dim, A);
 	Init_Mat_Sup (dim, B);
 
-	clock_t start = clock();
+	clock_t start_matrix = clock();
 
 	Multiplicar_Matrices (A, B, C, dim);
-
 	clock_t end = clock() - start;
+	clock_t end_matrix = clock() - start_matrix;
+	double duration_matrix = ((double) end_matrix / CLOCKS_PER_SEC);
 	double duration = ((double) end / CLOCKS_PER_SEC);
+  	printf("[Duration] %f\n", duration);
 	
-	printf("[Duration] %f\n", duration);
+	printf("[Duration_matrix] %f\n", duration_matrix);
 
  	free(A);
 	free(B);
