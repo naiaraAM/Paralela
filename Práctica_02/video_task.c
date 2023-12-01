@@ -7,6 +7,8 @@ void fgauss (int *, int *, int, int);
 
 int main(int argc, char *argv[]) {
 
+   double start_time, end_time;
+   start_time = omp_get_wtime();
    FILE *in;
    FILE *out;
    int i, j, size, seq = 80;
@@ -45,7 +47,6 @@ int main(int argc, char *argv[]) {
    }
    
    i = 0;
-
    double start = omp_get_wtime();
    do 
    {
@@ -60,7 +61,7 @@ int main(int argc, char *argv[]) {
    } while (!feof(in));
 
    double end = omp_get_wtime();
-   printf("TIME sec: %f\n", end-start);
+   printf("TIME loop: %f\n", end-start);
 
    for (i=0; i<seq; i++)
    {
@@ -76,6 +77,8 @@ int main(int argc, char *argv[]) {
 
    fclose(out);
    fclose(in);
+   end_time = omp_get_wtime();
+   printf("TIME total: %f\n", end_time-start_time);
 
    return EXIT_SUCCESS;
 }

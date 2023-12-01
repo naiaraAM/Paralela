@@ -3,12 +3,13 @@
 #include <unistd.h>
 #include <omp.h>
 
-#define NUM_THREADS 2
+#define NUM_THREADS 8
 
 void fgauss (int *, int *, int, int);
 
 int main(int argc, char *argv[]) {
 
+   double start_time = omp_get_wtime();
    FILE *input_file;
    FILE *out;
    int i, j, size, seq = 80;
@@ -49,8 +50,6 @@ int main(int argc, char *argv[]) {
    int i_prev = 0;
    int i_prev_lect = -1;
 
-   double start_time = omp_get_wtime();
-
    #pragma omp parallel shared(pixels, input_file, height, width) private(size) num_threads(NUM_THREADS)
    {
       #pragma omp single
@@ -60,19 +59,19 @@ int main(int argc, char *argv[]) {
          i_prev_lect = -1;
          do
          { 
-            #pragma omp task depend(in: i_prev_lect) depend(out: pixels[i]) firstprivate(i) // tiene que depender de la lectura anterior
+            #pragma omp task depend(in: pixels[i - 1]) depend(out: pixels[i]) firstprivate(i)
             {
                size = fread(pixels[i], (height + 2) * (width + 2) * sizeof(int), 1, input_file);
                printf("size: %d\n", i);
                i_prev_lect = i - 1;
-            }  
-            #pragma omp task depend(in : pixels[i]) depend(out: filtered[i], i_prev) firstprivate(i)
+            }
+            #pragma omp task depend(in : pixels[i]) depend(out: filtered[i]) firstprivate(i)
             {
                fgauss (pixels[i], filtered[i], height, width);
                printf("pixels: %d\n", i);
                i_prev = i - 1;
             }
-            #pragma omp task depend(in: filtered[i_prev], i, i_prev) firstprivate(i)
+            #pragma omp task depend(in: filtered[i]) depend(out: i_prev) firstprivate(i)
             {
                fwrite(filtered[i], (height + 2) * (width + 2) * sizeof(int), 1, out);
                printf("filtered: %d\n", i);
@@ -82,8 +81,8 @@ int main(int argc, char *argv[]) {
       }
    }
 
-   double end_time = omp_get_wtime();
-   printf("TIME v1: %f\n", end_time - start_time);
+   
+   
 
 
    for (i = 0; i < seq; i++) 
@@ -99,6 +98,8 @@ int main(int argc, char *argv[]) {
 
    fclose(out);
    fclose(input_file);
+   double end_time = omp_get_wtime();
+   printf("TIME v1: %f\n", end_time - start_time);
 
    return EXIT_SUCCESS;
 }

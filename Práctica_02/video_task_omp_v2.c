@@ -3,12 +3,13 @@
 #include <unistd.h>
 #include <omp.h>
 
-#define NUM_THREADS 2
+#define NUM_THREADS 8
 
 void fgauss (int *, int *, int, int);
 
 int main(int argc, char *argv[]) {
 
+   double start = omp_get_wtime();
    FILE *input_file;
    FILE *out;
    int i, j, size, seq = 80;
@@ -46,8 +47,6 @@ int main(int argc, char *argv[]) {
       filtered[i] = (int *) malloc((height+2) * (width+2) * sizeof(int)); // guardar puntero, se puede paralelizar
    }
 
-   double start = omp_get_wtime();
-
    #pragma omp parallel shared(pixels, input_file, height, width) private(size) num_threads(NUM_THREADS)
    {
       #pragma omp single
@@ -63,7 +62,7 @@ int main(int argc, char *argv[]) {
                {
                   fgauss (pixels[i], filtered[i], height, width);
                   printf("pixels: %d\n", i);
-               } 
+               }
             }
             i++;
          } while (!feof(input_file) && i < seq);
@@ -75,9 +74,6 @@ int main(int argc, char *argv[]) {
       fwrite(filtered[i], (height+2) * (width + 2) * sizeof(int), 1, out);
       printf("filtered: %d\n", i);
    }
-
-   double end = omp_get_wtime();
-   printf("TIME v2: %f\n", end-start);
 
    for (i = 0; i < seq; i++) 
    {
@@ -92,6 +88,8 @@ int main(int argc, char *argv[]) {
 
    fclose(out);
    fclose(input_file);
+   double end = omp_get_wtime();
+   printf("TIME v2: %f\n", end-start);
 
    return EXIT_SUCCESS;
 }
