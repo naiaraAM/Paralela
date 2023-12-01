@@ -19,7 +19,7 @@ int main (int argc, char ** argv)
     int dim = 1300;
     float *A, *B, *C;
 
-	if (argc == 4) // beacuse of script, code reutilization
+	if (argc == 3) // beacuse of script, code reutilization
 	{
 		dim = atoi (argv[1]);
 		block_size = atoi (argv[2]);
@@ -98,12 +98,12 @@ void Multiplicar_Matrices_Inf (float *A, float *B, float *C, int dim, int block_
 
     #pragma omp parallel private (i, j, k) shared (A, B, C, dim, block_size) num_threads(max_threads)
 	{
-		#pragma omp for collapse(2) schedule(guided, block_size)
+		#pragma omp for collapse(2) schedule(guided)
 		for (i=0; i < dim; i++)
 			for (j=0; j < dim; j++)
 				C[i*dim+j] = 0.0;
 
-		#pragma omp for collapse(2) schedule(guided, block_size) // necessary to be collapse(2)
+		#pragma omp for collapse(2) schedule(guided) // necessary to be collapse(2)
 		for (i=1; i < dim; i++)
 			for (j=1; j < dim; j++)
 				for (k=0; k < i; k++)

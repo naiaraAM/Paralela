@@ -13,20 +13,19 @@ void Init_Mat_Sup (int dim, float *M);
 void Init_Mat_Inf (int dim, float *M);
 void Escribir_Matriz (float *M, int dim);
 void Multiplicar_Matrices (float *A, float *B, float *C, int dim);
-float Calcula_Maximo (float *M, int dim);
+float Calcula_Maximo (float *M, int dim, int num_threads);
 
 
 int main (int argc, char ** argv)
 {
-
-    int block_size = 1;
     int dim = 5;
+	int num_threads = NUM_THREADS;
     float *A, *B, *C;
 
 	if (argc == 3)
 	{
 		dim = atoi (argv[1]);
-		block_size = atoi (argv[2]);
+		num_threads = atoi (argv[2]);
 	}
 
     A = (float *) malloc (dim * dim * sizeof(float));
@@ -39,7 +38,7 @@ int main (int argc, char ** argv)
     Multiplicar_Matrices(A, B, C, dim);
     clock_t start = clock();
 
-	float max = Calcula_Maximo(C, dim);
+	float max = Calcula_Maximo(C, dim, num_threads);
 
     clock_t end = clock() - start;
 	double duration = ((double) end) / CLOCKS_PER_SEC;
@@ -115,12 +114,13 @@ void Multiplicar_Matrices (float *A, float *B, float *C, int dim)
 				C[i*dim+j] += A[i*dim+k] * B[j+k*dim];
 }
 
-float Calcula_Maximo(float *M, int dim)
+float Calcula_Maximo(float *M, int dim, int num_threads)
 {
 	float max = FLT_MIN;
+	printf("[Num threads] %d\n", num_threads);
 	omp_lock_t lock;
 	omp_init_lock(&lock);
-	#pragma omp parallel
+	#pragma omp parallel num_threads(num_threads) shared(M, max)
 	{
 		#pragma omp for
 		for (int i = 0; i < dim * dim; i++)

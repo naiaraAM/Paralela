@@ -22,6 +22,7 @@ int main (int argc, char ** argv)
     int dim = 5;
 	int num_threads = NUM_THREADS;
     float *A, *B, *C;
+	
 
 	if (argc == 3)
 	{
@@ -121,12 +122,18 @@ float Calcula_Maximo(float *M, int dim, int num_threads)
 {
 	float max_local = FLT_MIN;
 	printf("[Num threads] %d\n", num_threads);
-	#pragma omp parallel for reduction(max:max_local) num_threads(num_threads) shared(M)
-	for (int i = 0; i < dim * dim ; i++)
+	#pragma omp parallel num_threads(num_threads) shared(M, max_local)
 	{
-		if (M[i] > max_local)
+		#pragma omp single
 		{
-			max_local = M[i];
+			max_local = FLT_MIN;
+			for (int i = 0; i < dim * dim ; i++)
+			{
+				if (max_local < M[i])
+				{
+					max_local = M[i];
+				}
+			}
 		}
 	}
 	return max_local;

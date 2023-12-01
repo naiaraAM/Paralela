@@ -16,7 +16,7 @@ datos_omp_runtime = [data[i:i+27] for i in range(54, len(data), 27)]
 datos_omp_reduction = [data[i:i+27] for i in range(81, len(data), 27)]
 
 # Crear un gráfico para cada conjunto de datos
-plt.plot(x, datos_sec[0], label="Secuencial")
+plt.plot(x, datos_sec[0], label="Single")
 plt.plot(x, datos_omp_directives[0], label="Directivas")
 plt.plot(x, datos_omp_runtime[0], label="Runtime")
 plt.plot(x, datos_omp_reduction[0], label="Reduction")
@@ -29,8 +29,7 @@ plt.title('Relación tamaño de la matriz y tiempo de ejecución con ' + sys.arg
 plt.legend()
 
 now = datetime.datetime.now()
-plt.savefig(f"max_omp_" + sys.argv[1]+ "_{now.strftime('%Y-%m-%d_%H-%M-%S')}.png")
-plt.savefig(f"max_omp_" + sys.argv[1]+ "_{now.strftime('%Y-%m-%d_%H-%M-%S')}.pdf")
+plt.savefig(f"max_omp_" + sys.argv[1] + "_" + now.strftime("%Y-%m-%d_%H-%M-%S") + ".png")
 
 plt.show()
 

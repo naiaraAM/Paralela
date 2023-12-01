@@ -4,6 +4,7 @@
 #include <time.h>
 #include <float.h>
 #include <mutex>
+#include <chrono>
 
 #define RAND rand() % 100
 #define NUM_THREADS 2
@@ -22,15 +23,15 @@ int main (int argc, char ** argv)
 {
 
     int block_size = 1;
-    int dim = 5;
-    int num_threads = 2;
+    int dim = 1500;
+    int num_threads = 8;
     float *A, *B, *C;
 
-    if (argc == 4)
+    if (argc == 3)
 	{
 		dim = atoi (argv[1]);
-		block_size = atoi (argv[2]);
-        num_threads = atoi (argv[3]);
+		//block_size = atoi (argv[2]);
+        num_threads = atoi (argv[2]);
 	}
 
     A = (float *) malloc (dim * dim * sizeof(float));
@@ -66,7 +67,7 @@ int main (int argc, char ** argv)
         thread.join();
     }
 
-    clock_t start = clock();
+    auto start = std::chrono::high_resolution_clock::now();
     for (auto i = 0; i < num_threads; i++)
     {
         threads[i] = std::thread(Calcula_Maximo, C, row_start[i], row_end[i]);
@@ -75,12 +76,10 @@ int main (int argc, char ** argv)
     {
         thread.join();
     }
-    clock_t end = clock() - start;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
 
-    double duration = (double) end / (double) CLOCKS_PER_SEC;
-
-    //printf("[Max] %f\n", max);
-    printf("[Duration] %f\n", duration);
+    std::cout << "[Duration] " << duration.count() << " seconds" << std::endl;
 
     free(A);
     free(B);
@@ -150,10 +149,10 @@ void Calcula_Maximo(float *M, int row_start, int row_end)
     for (int i = row_start; i < row_end; i++)
     {
         max_mutex.lock();
-            if (M[i] > max)
-            {
-                max = M[i];
-            }
+        if (M[i] > max)
+        {
+            max = M[i];
+        }
         max_mutex.unlock();
     }
 }
