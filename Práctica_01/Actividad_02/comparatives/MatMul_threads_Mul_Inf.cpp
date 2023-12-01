@@ -16,8 +16,8 @@ void Multiplicar_Matrices_Inf(float *A, float *B, float *C, int dim, int row_sta
 int main (int argc, char ** argv)
 {
     int block_size = 1;
-    int dim = 1300;
-    int num_threads = 2;
+    int dim = 1500;
+    int num_threads = 8;
     float *A, *B, *C;
 
     if (argc == 4)

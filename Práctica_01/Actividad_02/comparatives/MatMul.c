@@ -29,7 +29,7 @@ int main (int argc, char ** argv)
 
 /* Lectura de parámetros de entrada */
 /* Usage: ./MatMul [dim] [block_size]*/
-	if (argc == 3)
+	if (argc == 3) // code reutilization
 	{
 		dim = atoi (argv[1]);
 		block_size = atoi (argv[2]);
@@ -40,10 +40,12 @@ int main (int argc, char ** argv)
 	C = (float *) malloc (dim * dim * sizeof (float));
 
 	Init_Mat_Inf (dim, A);
-	Init_Mat_Inf (dim, B);
-
+	Init_Mat_Sup (dim, B);
+	clock_t start = clock();
 	Multiplicar_Matrices_Inf (A, B, C, dim);
-	Escribir_Matriz (C, dim);
+	clock_t end = clock();
+	double time = (double)(end - start) / CLOCKS_PER_SEC;
+	printf("[Duration] %f\n", time);
 
  	free(A);
 	free(B);
