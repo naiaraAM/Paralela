@@ -1,6 +1,7 @@
 # include <stdlib.h>
 # include <stdio.h>
 # include <math.h>
+#include <omp.h>
 
 int main ( int argc, char *argv[] );
 
@@ -67,8 +68,21 @@ int main ( int argc, char *argv[] )
 
 */
 {
-# define M 500
-# define N 500
+  int NUM_THREADS=8;
+  int M = 500;
+  int N = 500;
+
+  if (argc == 2)
+  {
+    NUM_THREADS = atoi(argv[1]);
+  } else if (argc == 4)
+  {
+    NUM_THREADS = atoi(argv[1]);
+    M = atoi(argv[2]);
+    N = atoi(argv[2]);
+  }
+  double start = omp_get_wtime();
+  printf("NUM_THREADS = %d\n", NUM_THREADS);
 
   double diff;
   double epsilon = 0.001;
@@ -78,9 +92,16 @@ int main ( int argc, char *argv[] )
   int j;
   double mean;
   double my_diff;
-  double u[M][N];
-  double w[M][N];
-  double wtime;
+  double **u, **w;
+
+  // Allocate memory for u and w
+  u = (double **)malloc(M * sizeof(double *));
+  w = (double **)malloc(M * sizeof(double *));
+  for (i = 0; i < M; i++)
+  {
+    u[i] = (double *)malloc(N * sizeof(double));
+    w[i] = (double *)malloc(N * sizeof(double));
+  }
 
   printf ( "\n" );
   printf ( "HEATED_PLATE\n" );
@@ -94,38 +115,38 @@ int main ( int argc, char *argv[] )
 */
   mean = 0.0;
 
-  #pragma omp parallel for
-  for ( i = 1; i < M - 1; i++ )
+  #pragma omp parallel num_threads(NUM_THREADS) shared(w, mean) private(i,j)
   {
-    w[i][0] = 100.0;
-    w[i][N - 1] = 100.0;
-  }
-
-  #pragma omp parallel for
-  for ( j = 0; j < N; j++ )
-  {
-    w[M-1][j] = 100.0;
-    w[0][j] = 0.0;
-  }
+    #pragma omp for
+    for (i = 1; i < M - 1; i++)
+    {
+      w[i][0] = 100.0;
+      w[i][N - 1] = 100.0;
+    }
+    #pragma omp for
+    for (j = 0; j < N; j++)
+    {
+      w[M-1][j] = 100.0;
+      w[0][j] = 0.0;
+    }
   
-  // TODO: se puede paralelizar todo con un collapse(2) comprobando si N > M y viceversa?
   
-
 /*
   Average the boundary values, to come up with a reasonable
   initial value for the interior.
 */
 
-  #pragma omp parallel for reduction(+:mean)
-  for ( i = 1; i < M - 1; i++ )
-  {
-    mean = mean + w[i][0] + w[i][N-1];
-  }
+    #pragma omp for reduction(+:mean)
+    for ( i = 1; i < M - 1; i++ )
+    {
+      mean += w[i][0] + w[i][N-1];
+    }
 
-  #pragma omp parallel for reduction(+:mean)
-  for ( j = 0; j < N; j++ )
-  {
-    mean = mean + w[M-1][j] + w[0][j];
+    #pragma omp for reduction(+:mean)
+    for ( j = 0; j < N; j++ )
+    {
+      mean += w[M-1][j] + w[0][j];
+    }
   }
 
 /*
@@ -141,7 +162,7 @@ int main ( int argc, char *argv[] )
   Initialize the interior solution to the mean value.
 */
 
-  #pragma omp parallel for collapse(2)
+  #pragma omp parallel for collapse(2) private(i,j) shared(w, mean) num_threads(NUM_THREADS)
   for ( i = 1; i < M - 1; i++ )
   {
     for ( j = 1; j < N - 1; j++ )
@@ -167,76 +188,72 @@ int main ( int argc, char *argv[] )
 /*
   Save the old solution in U.
 */
-    #pragma omp parallel for collapse(2)
-    for ( i = 0; i < M; i++ ) 
-    {
-      for ( j = 0; j < N; j++ )
-      {
-        u[i][j] = w[i][j];
-      }
-    }
 /*
   Determine the new estimate of the solution at the interior points.
   The new solution W is the average of north, south, east and west neighbors.
 */
-    #pragma omp parallel for collapse(2)
-    for ( i = 1; i < M - 1; i++ )
+    #pragma omp parallel private(i,j) shared(u, w) num_threads(NUM_THREADS)
     {
-      for ( j = 1; j < N - 1; j++ )
+      #pragma omp for collapse(2)
+      for ( i = 0; i < M; i++ ) 
       {
-        w[i][j] = ( u[i-1][j] + u[i+1][j] + u[i][j-1] + u[i][j+1] ) / 4.0;
+        for ( j = 0; j < N; j++ )
+        {
+          u[i][j] = w[i][j];
+        }
       }
-    }
-/*
-  C and C++ cannot compute a maximum as a reduction operation.
-
-  Therefore, we define a private variable MY_DIFF for each thread.
-  Once they have all computed their values, we use a CRITICAL section
-  to update DIFF.
-*/
-    diff = 0.0;
-    {
-      my_diff = 0.0;
-      #pragma omp parallel for collapse(2) reduction(max:my_diff)
+      #pragma omp for collapse(2)
       for ( i = 1; i < M - 1; i++ )
       {
         for ( j = 1; j < N - 1; j++ )
         {
-          if ( my_diff < fabs ( w[i][j] - u[i][j] ) )
-          {
-            my_diff = fabs ( w[i][j] - u[i][j] );
-          }
+          w[i][j] = ( u[i-1][j] + u[i+1][j] + u[i][j-1] + u[i][j+1] ) / 4.0;
         }
       }
+    }
 
-      if ( diff < my_diff )
+  /*
+    C and C++ cannot compute a maximum as a reduction operation.
+
+    Therefore, we define a private variable MY_DIFF for each thread.
+    Once they have all computed their values, we use a CRITICAL section
+    to update DIFF.
+  */
+    diff = 0.0;
+    #pragma omp parallel shared(u, w) private(i, j) reduction(max:diff) num_threads(NUM_THREADS)
+    {
+      #pragma omp for collapse(2)
+      for ( i = 1; i < M - 1; i++ )
       {
-        #pragma omp critical
-        diff = my_diff;
+        for ( j = 1; j < N - 1; j++ )
+        {
+          if ( diff < fabs ( w[i][j] - u[i][j] ) )
+          {
+            diff = fabs ( w[i][j] - u[i][j] );
+          }
+        }
       }
     }
 
     iterations++;
     if ( iterations == iterations_print )
-    {
+    {       
       printf ( "  %8d  %f\n", iterations, diff );
       iterations_print = 2 * iterations_print;
     }
   } 
 
-  wtime = omp_get_wtime ( ) - wtime;
-
   printf ( "\n" );
   printf ( "  %8d  %f\n", iterations, diff );
   printf ( "\n" );
   printf ( "  Error tolerance achieved.\n" );
-  printf ( "  Wallclock time = %f\n", wtime );
+  printf ( "  Wallclock time = %f\n", omp_get_wtime() - start );
 /*
   Terminate.
 */
   printf ( "\n" );
   printf ( "HEATED_PLATE_OPENMP:\n" );
-  printf ( "  Normal end of execution.\n" );
+  printf ( "Normal end of execution.\n" );
 
   return 0;
 

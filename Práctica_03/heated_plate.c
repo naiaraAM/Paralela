@@ -68,8 +68,15 @@ int main ( int argc, char *argv[] )
 
 */
 {
-# define M 500
-# define N 500
+  int M = 500;
+  int N = 500;
+
+  if (argc == 3)
+  {
+    M = atoi(argv[2]);
+    N = atoi(argv[2]);
+  }
+  double start = omp_get_wtime();
 
   double diff;
   double epsilon = 0.001;
@@ -79,9 +86,17 @@ int main ( int argc, char *argv[] )
   int j;
   double mean;
   double my_diff;
-  double u[M][N];
-  double w[M][N];
-  double wtime;
+  double **u;
+  double **w;
+
+  // Allocate memory for u and w
+  u = (double **)malloc(M * sizeof(double *));
+  w = (double **)malloc(M * sizeof(double *));
+  for (i = 0; i < M; i++)
+  {
+    u[i] = (double *)malloc(N * sizeof(double));
+    w[i] = (double *)malloc(N * sizeof(double));
+  }
 
   printf ( "\n" );
   printf ( "HEATED_PLATE\n" );
@@ -93,8 +108,6 @@ int main ( int argc, char *argv[] )
 /*
   Set the boundary values, which don't change. 
 */
-
-  wtime = omp_get_wtime ( );
 
   mean = 0.0;
 
@@ -223,13 +236,11 @@ int main ( int argc, char *argv[] )
     }
   } 
 
-  wtime = omp_get_wtime ( ) - wtime;
-
   printf ( "\n" );
   printf ( "  %8d  %f\n", iterations, diff );
   printf ( "\n" );
   printf ( "  Error tolerance achieved.\n" );
-  printf ( "  Wallclock time = %f\n", wtime );
+  printf ( "  Wallclock time = %f\n", omp_get_wtime ( ) - start );
 /*
   Terminate.
 */
