@@ -1,6 +1,5 @@
 #!/bin/bash
 program_name=("heated_plate.c" "heated_plate_omp.c")
-t_sec=28.8 # Cambiar por el tiempo de ejecución secuencial en el pc
 m_size=100
 
 # Nombre del archivo donde se guardarán los resultados
@@ -11,7 +10,10 @@ rm -f ${output_file[$1]}
 
 echo "--- RUNNING ---"
 g++ -std=c++11 -fopenmp ${program_name[0]} -o sec
-g++ -std=c++11 -fopenmp ${program_name[1]} -o omp 
+g++ -std=c++11 -fopenmp ${program_name[1]} -o omp
+
+t_sec=$(./sec $m_size $m_size| grep "Wallclock time" | awk '{print $4}')
+
 
 case $1 in
     0)
@@ -46,5 +48,6 @@ esac
 
 rm sec
 rm omp
+rm a.out
 
 python3 graphic.py $1

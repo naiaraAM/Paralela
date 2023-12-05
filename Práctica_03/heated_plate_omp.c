@@ -79,7 +79,7 @@ int main ( int argc, char *argv[] )
   {
     NUM_THREADS = atoi(argv[1]);
     M = atoi(argv[2]);
-    N = atoi(argv[2]);
+    N = atoi(argv[3]);
   }
   double start = omp_get_wtime();
   printf("NUM_THREADS = %d\n", NUM_THREADS);
